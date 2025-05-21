@@ -3,8 +3,11 @@ import { CreatePostInputDTO, PostDTO } from '../dto'
 
 export interface PostRepository {
   create: (userId: string, data: CreatePostInputDTO) => Promise<PostDTO>
-  getAllByDatePaginated: (options: CursorPagination) => Promise<PostDTO[]>
+  getAllByDatePaginated: (options: CursorPagination, userId: string) => Promise<PostDTO[]>
   delete: (postId: string) => Promise<void>
-  getById: (postId: string) => Promise<PostDTO | null>
-  getByAuthorId: (authorId: string) => Promise<PostDTO[]>
+  getById: (postId: string, userId?: string) => Promise<PostDTO | null>
+  getByAuthorId: (authorId: string, userId?: string) => Promise<PostDTO[]>
+  canViewPost: (post: PostDTO, userId: string) => Promise<boolean>
+  getAuthorPrivacyInfo: (authorId: string) => Promise<{ private: boolean } | null>
+  canAccessAuthorPosts: (userId: string, authorId: string) => Promise<boolean>
 }

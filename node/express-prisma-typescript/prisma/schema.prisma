@@ -23,6 +23,7 @@ model User {
   name     String? @db.VarChar(35) // Limit display name to 35 characters
   email    String  @unique // Unique constraint
   password String
+  private  Boolean @default(false) // Whether the user has a private profile
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt

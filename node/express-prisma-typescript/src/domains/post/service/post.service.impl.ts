@@ -14,26 +14,37 @@ export class PostServiceImpl implements PostService {
   }
 
   async deletePost (userId: string, postId: string): Promise<void> {
-    const post = await this.repository.getById(postId)
+    const post = await this.repository.getById(postId, userId)
     if (!post) throw new NotFoundException('post')
     if (post.authorId !== userId) throw new ForbiddenException()
     await this.repository.delete(postId)
   }
 
   async getPost (userId: string, postId: string): Promise<PostDTO> {
-    // TODO: validate that the author has public profile or the user follows the author
-    const post = await this.repository.getById(postId)
+    const post = await this.repository.getById(postId, userId)
     if (!post) throw new NotFoundException('post')
     return post
   }
 
   async getLatestPosts (userId: string, options: CursorPagination): Promise<PostDTO[]> {
-    // TODO: filter post search to return posts from authors that the user follows
-    return await this.repository.getAllByDatePaginated(options)
+    return await this.repository.getAllByDatePaginated(options, userId)
   }
 
-  async getPostsByAuthor (userId: any, authorId: string): Promise<PostDTO[]> {
-    // TODO: throw exception when the author has a private profile and the user doesn't follow them
-    return await this.repository.getByAuthorId(authorId)
+  async getPostsByAuthor (userId: string, authorId: string): Promise<PostDTO[]> {
+    // First check if the author exists and if they have a private account
+    const authorInfo = await this.repository.getAuthorPrivacyInfo(authorId)
+    if (!authorInfo) {
+      throw new NotFoundException('user')
+    }
+    
+    // If the author has a private account, check if the user follows them
+    if (authorInfo.private) {
+      const canAccess = await this.repository.canAccessAuthorPosts(userId, authorId)
+      if (!canAccess) {
+        throw new NotFoundException('user') // 404 to not reveal the existence of private accounts
+      }
+    }
+    
+    return await this.repository.getByAuthorId(authorId, userId)
   }
 }
