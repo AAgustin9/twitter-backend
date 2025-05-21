@@ -1,5 +1,5 @@
 # Install dependencies
-FROM node:18-alpine AS deps
+FROM node:18-bullseye AS deps
 
 WORKDIR /app
 
@@ -20,7 +20,7 @@ RUN yarn db:generate
 RUN yarn build
 
 # Production runtime
-FROM node:18-alpine AS runner
+FROM node:18-bullseye AS runner
 
 WORKDIR /app
 
@@ -33,7 +33,7 @@ EXPOSE 8080
 CMD yarn prod
 
 # Development runtime
-FROM node:18-alpine AS dev
+FROM node:18-bullseye AS dev
 
 WORKDIR /app
 
