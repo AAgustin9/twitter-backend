@@ -66,4 +66,22 @@ export class PostServiceImpl implements PostService {
     
     return await this.repository.getCommentsByPostId(postId, userId)
   }
+  
+  async getUserComments(viewerId: string, authorId: string): Promise<PostDTO[]> {
+    // First check if the author exists and if they have a private account
+    const authorInfo = await this.repository.getAuthorPrivacyInfo(authorId)
+    if (!authorInfo) {
+      throw new NotFoundException('user')
+    }
+    
+    // If the author has a private account, check if the viewer follows them
+    if (authorInfo.private && viewerId !== authorId) {
+      const canAccess = await this.repository.canAccessAuthorPosts(viewerId, authorId)
+      if (!canAccess) {
+        throw new NotFoundException('user') // 404 to not reveal the existence of private accounts
+      }
+    }
+    
+    return await this.repository.getCommentsByUserId(authorId, viewerId)
+  }
 }

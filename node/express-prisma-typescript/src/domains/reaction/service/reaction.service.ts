@@ -5,4 +5,6 @@ export interface ReactionService {
   deleteReaction: (userId: string, postId: string, type: ReactionType) => Promise<void>
   getReactionsByPostId: (postId: string) => Promise<ReactionDTO[]>
   hasUserReacted: (userId: string, postId: string, type: ReactionType) => Promise<boolean>
+  getUserLikes: (userId: string) => Promise<ReactionDTO[]>
+  getUserRetweets: (userId: string) => Promise<ReactionDTO[]>
 } 

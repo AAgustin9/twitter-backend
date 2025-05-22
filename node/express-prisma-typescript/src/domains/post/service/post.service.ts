@@ -10,4 +10,5 @@ export interface PostService {
   // Comment methods
   createComment: (userId: string, body: CreateCommentInputDTO) => Promise<PostDTO>
   getComments: (userId: string, postId: string) => Promise<PostDTO[]>
+  getUserComments: (userId: string, authorId: string) => Promise<PostDTO[]>
 }

@@ -15,4 +15,5 @@ export interface PostRepository {
   createComment: (userId: string, parentId: string, data: CreatePostInputDTO) => Promise<PostDTO>
   getCommentsByPostId: (postId: string, userId?: string) => Promise<PostDTO[]>
   getPostsWithoutComments: (options: CursorPagination, userId: string) => Promise<PostDTO[]>
+  getCommentsByUserId: (userId: string, viewerId?: string) => Promise<PostDTO[]>
 }

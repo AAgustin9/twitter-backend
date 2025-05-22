@@ -169,4 +169,102 @@ reactionRouter.get('/:postId', async (req: Request, res: Response) => {
   const reactions = await service.getReactionsByPostId(postId)
 
   return res.status(HttpStatus.OK).json(reactions)
+})
+
+/**
+ * @swagger
+ * /api/reaction/user/{userId}/likes:
+ *   get:
+ *     summary: Get user likes
+ *     description: Get all posts liked by a specific user
+ *     tags: [Reaction]
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID of the user to get likes for
+ *     responses:
+ *       200:
+ *         description: List of liked posts with reaction data
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   id:
+ *                     type: string
+ *                   postId:
+ *                     type: string
+ *                   userId:
+ *                     type: string
+ *                   type:
+ *                     type: string
+ *                     enum: [LIKE]
+ *                   createdAt:
+ *                     type: string
+ *                     format: date-time
+ *                   post:
+ *                     type: object
+ *       401:
+ *         description: Unauthorized
+ */
+reactionRouter.get('/user/:userId/likes', async (req: Request, res: Response) => {
+  const { userId } = req.params
+
+  const likes = await service.getUserLikes(userId)
+
+  return res.status(HttpStatus.OK).json(likes)
+})
+
+/**
+ * @swagger
+ * /api/reaction/user/{userId}/retweets:
+ *   get:
+ *     summary: Get user retweets
+ *     description: Get all posts retweeted by a specific user
+ *     tags: [Reaction]
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID of the user to get retweets for
+ *     responses:
+ *       200:
+ *         description: List of retweeted posts with reaction data
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   id:
+ *                     type: string
+ *                   postId:
+ *                     type: string
+ *                   userId:
+ *                     type: string
+ *                   type:
+ *                     type: string
+ *                     enum: [RETWEET]
+ *                   createdAt:
+ *                     type: string
+ *                     format: date-time
+ *                   post:
+ *                     type: object
+ *       401:
+ *         description: Unauthorized
+ */
+reactionRouter.get('/user/:userId/retweets', async (req: Request, res: Response) => {
+  const { userId } = req.params
+
+  const retweets = await service.getUserRetweets(userId)
+
+  return res.status(HttpStatus.OK).json(retweets)
 }) 

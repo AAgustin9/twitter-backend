@@ -271,4 +271,50 @@ export class PostRepositoryImpl implements PostRepository {
     
     return comments.map(comment => new PostDTO(comment))
   }
+  
+  async getCommentsByUserId(userId: string, viewerId?: string): Promise<PostDTO[]> {
+    // Get all comments made by the user
+    const comments = await this.db.post.findMany({
+      where: {
+        authorId: userId,
+        parentId: { not: null }, // Only get posts that are comments (have a parentId)
+        deletedAt: null
+      },
+      include: {
+        parent: {
+          include: {
+            author: {
+              select: {
+                id: true,
+                username: true,
+                name: true,
+                private: true
+              }
+            }
+          }
+        }
+      },
+      orderBy: {
+        createdAt: 'desc' // Show newest comments first
+      }
+    })
+    
+    // Filter out comments on private posts if viewer can't access them
+    const filteredComments = await Promise.all(
+      comments.map(async (comment) => {
+        // If parent post has a private author and viewer is provided
+        if (comment.parent?.author.private && viewerId) {
+          // Check if viewer can access the post
+          const canView = await this.canViewPost(new PostDTO(comment.parent), viewerId)
+          if (!canView) return null
+        }
+        return comment
+      })
+    )
+    
+    // Filter out null values and map to DTOs
+    return filteredComments
+      .filter(comment => comment !== null)
+      .map(comment => new PostDTO(comment!))
+  }
 }

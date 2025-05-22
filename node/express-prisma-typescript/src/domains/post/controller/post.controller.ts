@@ -411,3 +411,56 @@ postRouter.post('/:postId/comments', BodyValidation(CreatePostInputDTO), async (
 
   return res.status(HttpStatus.CREATED).json(comment)
 })
+
+/**
+ * @swagger
+ * /api/post/user/{userId}/comments:
+ *   get:
+ *     summary: Get comments by user
+ *     description: Returns all comments made by a specific user
+ *     tags: [Post]
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID of the user whose comments to get
+ *     responses:
+ *       200:
+ *         description: List of comments by user
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   id:
+ *                     type: string
+ *                   content:
+ *                     type: string
+ *                   authorId:
+ *                     type: string
+ *                   parentId:
+ *                     type: string
+ *                   images:
+ *                     type: array
+ *                     items:
+ *                       type: string
+ *                   createdAt:
+ *                     type: string
+ *                     format: date-time
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: User not found or not accessible
+ */
+postRouter.get('/user/:userId/comments', async (req: Request, res: Response) => {
+  const { userId } = res.locals.context
+  const { userId: authorId } = req.params
+
+  const comments = await service.getUserComments(userId, authorId)
+
+  return res.status(HttpStatus.OK).json(comments)
+})

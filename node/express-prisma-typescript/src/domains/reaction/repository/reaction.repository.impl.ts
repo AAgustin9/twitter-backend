@@ -57,4 +57,30 @@ export class ReactionRepositoryImpl implements ReactionRepository {
       },
     })
   }
+
+  async findByUserIdAndType(userId: string, type: ReactionType) {
+    return this.db.reaction.findMany({
+      where: {
+        userId,
+        type,
+        deletedAt: null,
+      },
+      include: {
+        post: {
+          include: {
+            author: {
+              select: {
+                id: true,
+                username: true,
+                name: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    })
+  }
 } 

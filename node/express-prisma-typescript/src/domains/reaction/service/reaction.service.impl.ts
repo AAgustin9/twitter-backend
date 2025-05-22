@@ -57,4 +57,32 @@ export class ReactionServiceImpl implements ReactionService {
     const reaction = await this.repository.findByUserAndPost(userId, postId, type)
     return !!reaction
   }
+  
+  async getUserLikes(userId: string): Promise<ReactionDTO[]> {
+    const reactions = await this.repository.findByUserIdAndType(userId, ReactionType.LIKE)
+    
+    return reactions.map(reaction => ({
+      id: reaction.id,
+      postId: reaction.postId,
+      userId: reaction.userId,
+      type: reaction.type as ReactionType,
+      createdAt: reaction.createdAt,
+      updatedAt: reaction.updatedAt,
+      post: reaction.post,
+    }))
+  }
+  
+  async getUserRetweets(userId: string): Promise<ReactionDTO[]> {
+    const reactions = await this.repository.findByUserIdAndType(userId, ReactionType.RETWEET)
+    
+    return reactions.map(reaction => ({
+      id: reaction.id,
+      postId: reaction.postId,
+      userId: reaction.userId,
+      type: reaction.type as ReactionType,
+      createdAt: reaction.createdAt,
+      updatedAt: reaction.updatedAt,
+      post: reaction.post,
+    }))
+  }
 } 
