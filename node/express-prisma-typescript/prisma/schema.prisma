@@ -32,6 +32,7 @@ model User {
   posts     Post[]
   follows   Follow[] @relation(name: "follows")
   followers Follow[] @relation(name: "followers")
+  reactions Reaction[]
 }
 
 model Follow {
@@ -60,4 +61,27 @@ model Post {
   deletedAt DateTime? // Optional value
 
   author User @relation(fields: [authorId], references: [id], onDelete: Cascade) // One to many
+  reactions Reaction[]
+}
+
+enum ReactionType {
+  LIKE
+  RETWEET
+}
+
+model Reaction {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid // Primary Key
+
+  postId String @db.Uuid // Foreign Key
+  userId String @db.Uuid // Foreign Key
+  type   ReactionType
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime? // Optional value
+
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade) // One to many
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade) // One to many
+
+  @@unique([postId, userId, type]) // Ensures a user can only like or retweet a post once
 }
