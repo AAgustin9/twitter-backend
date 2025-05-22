@@ -14,8 +14,35 @@ export const followerRouter = Router()
 const service: FollowerService = new FollowerServiceImpl(new FollowerRepositoryImpl(db))
 
 /**
- * Follow a user
- * POST /api/follower/follow/:user_id
+ * @swagger
+ * /api/follower/follow/{user_id}:
+ *   post:
+ *     summary: Follow a user
+ *     description: Follow a user by their ID
+ *     tags: [Follower]
+ *     parameters:
+ *       - in: path
+ *         name: user_id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID of the user to follow
+ *     responses:
+ *       200:
+ *         description: Successfully followed user
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *       400:
+ *         description: Invalid input data
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: User not found
  */
 followerRouter.post('/follow/:user_id', async (req: Request, res: Response) => {
   const { userId } = res.locals.context // Current logged-in user
@@ -27,8 +54,35 @@ followerRouter.post('/follow/:user_id', async (req: Request, res: Response) => {
 })
 
 /**
- * Unfollow a user
- * POST /api/follower/unfollow/:user_id
+ * @swagger
+ * /api/follower/unfollow/{user_id}:
+ *   post:
+ *     summary: Unfollow a user
+ *     description: Unfollow a user by their ID
+ *     tags: [Follower]
+ *     parameters:
+ *       - in: path
+ *         name: user_id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID of the user to unfollow
+ *     responses:
+ *       200:
+ *         description: Successfully unfollowed user
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *       400:
+ *         description: Invalid input data
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: User not found or not following
  */
 followerRouter.post('/unfollow/:user_id', async (req: Request, res: Response) => {
   const { userId } = res.locals.context // Current logged-in user

@@ -13,7 +13,60 @@ export const reactionRouter = Router()
 // Use dependency injection
 const service: ReactionService = new ReactionServiceImpl(new ReactionRepositoryImpl(db))
 
-// POST /api/reaction/:postId - Create a reaction (like or retweet)
+/**
+ * @swagger
+ * /api/reaction/{postId}:
+ *   post:
+ *     summary: Create a reaction
+ *     description: Create a reaction (like or retweet) on a post
+ *     tags: [Reaction]
+ *     parameters:
+ *       - in: path
+ *         name: postId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID of the post to react to
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - type
+ *             properties:
+ *               type:
+ *                 type: string
+ *                 enum: [LIKE, RETWEET]
+ *                 description: Type of reaction
+ *     responses:
+ *       201:
+ *         description: Reaction created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 id:
+ *                   type: string
+ *                 postId:
+ *                   type: string
+ *                 userId:
+ *                   type: string
+ *                 type:
+ *                   type: string
+ *                   enum: [LIKE, RETWEET]
+ *                 createdAt:
+ *                   type: string
+ *                   format: date-time
+ *       400:
+ *         description: Invalid input data
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: Post not found
+ */
 reactionRouter.post('/:postId', BodyValidation(CreateReactionInputDTO), async (req: Request, res: Response) => {
   const { userId } = res.locals.context
   const { postId } = req.params
@@ -24,7 +77,37 @@ reactionRouter.post('/:postId', BodyValidation(CreateReactionInputDTO), async (r
   return res.status(HttpStatus.CREATED).json(reaction)
 })
 
-// DELETE /api/reaction/:postId - Delete a reaction
+/**
+ * @swagger
+ * /api/reaction/{postId}:
+ *   delete:
+ *     summary: Delete a reaction
+ *     description: Remove a reaction (like or retweet) from a post
+ *     tags: [Reaction]
+ *     parameters:
+ *       - in: path
+ *         name: postId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID of the post to remove reaction from
+ *       - in: query
+ *         name: type
+ *         required: true
+ *         schema:
+ *           type: string
+ *           enum: [LIKE, RETWEET]
+ *         description: Type of reaction to remove
+ *     responses:
+ *       200:
+ *         description: Reaction deleted successfully
+ *       400:
+ *         description: Invalid input data
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: Reaction not found
+ */
 reactionRouter.delete('/:postId', async (req: Request, res: Response) => {
   const { userId } = res.locals.context
   const { postId } = req.params
@@ -39,7 +122,47 @@ reactionRouter.delete('/:postId', async (req: Request, res: Response) => {
   return res.status(HttpStatus.OK).send(`Deleted ${type.toLowerCase()} reaction from post ${postId}`)
 })
 
-// GET /api/reaction/:postId - Get all reactions for a post
+/**
+ * @swagger
+ * /api/reaction/{postId}:
+ *   get:
+ *     summary: Get reactions for a post
+ *     description: Get all reactions for a specific post
+ *     tags: [Reaction]
+ *     parameters:
+ *       - in: path
+ *         name: postId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID of the post to get reactions for
+ *     responses:
+ *       200:
+ *         description: List of reactions
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   id:
+ *                     type: string
+ *                   postId:
+ *                     type: string
+ *                   userId:
+ *                     type: string
+ *                   type:
+ *                     type: string
+ *                     enum: [LIKE, RETWEET]
+ *                   createdAt:
+ *                     type: string
+ *                     format: date-time
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: Post not found
+ */
 reactionRouter.get('/:postId', async (req: Request, res: Response) => {
   const { postId } = req.params
 

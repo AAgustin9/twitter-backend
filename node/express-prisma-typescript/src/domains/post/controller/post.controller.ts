@@ -14,6 +14,63 @@ export const postRouter = Router()
 // Use dependency injection
 const service: PostService = new PostServiceImpl(new PostRepositoryImpl(db))
 
+/**
+ * @swagger
+ * /api/post:
+ *   get:
+ *     summary: Get latest posts
+ *     description: Returns a list of the latest posts from users you follow and trending posts
+ *     tags: [Post]
+ *     parameters:
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *         description: Maximum number of posts to return
+ *       - in: query
+ *         name: before
+ *         schema:
+ *           type: string
+ *         description: Get posts before this cursor (pagination)
+ *       - in: query
+ *         name: after
+ *         schema:
+ *           type: string
+ *         description: Get posts after this cursor (pagination)
+ *     responses:
+ *       200:
+ *         description: List of posts
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   id:
+ *                     type: string
+ *                   content:
+ *                     type: string
+ *                   authorId:
+ *                     type: string
+ *                   images:
+ *                     type: array
+ *                     items:
+ *                       type: string
+ *                   createdAt:
+ *                     type: string
+ *                     format: date-time
+ *                   author:
+ *                     type: object
+ *                   qtyComments:
+ *                     type: integer
+ *                   qtyLikes:
+ *                     type: integer
+ *                   qtyRetweets:
+ *                     type: integer
+ *       401:
+ *         description: Unauthorized
+ */
 postRouter.get('/', async (req: Request, res: Response) => {
   const { userId } = res.locals.context
   const { limit, before, after } = req.query as Record<string, string>
@@ -23,6 +80,54 @@ postRouter.get('/', async (req: Request, res: Response) => {
   return res.status(HttpStatus.OK).json(posts)
 })
 
+/**
+ * @swagger
+ * /api/post/{postId}:
+ *   get:
+ *     summary: Get post by ID
+ *     description: Returns a specific post by its ID
+ *     tags: [Post]
+ *     parameters:
+ *       - in: path
+ *         name: postId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID of the post to get
+ *     responses:
+ *       200:
+ *         description: Post details
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 id:
+ *                   type: string
+ *                 content:
+ *                   type: string
+ *                 authorId:
+ *                   type: string
+ *                 images:
+ *                   type: array
+ *                   items:
+ *                     type: string
+ *                 createdAt:
+ *                   type: string
+ *                   format: date-time
+ *                 author:
+ *                   type: object
+ *                 qtyComments:
+ *                   type: integer
+ *                 qtyLikes:
+ *                   type: integer
+ *                 qtyRetweets:
+ *                   type: integer
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: Post not found
+ */
 postRouter.get('/:postId', async (req: Request, res: Response) => {
   const { userId } = res.locals.context
   const { postId } = req.params
@@ -32,6 +137,46 @@ postRouter.get('/:postId', async (req: Request, res: Response) => {
   return res.status(HttpStatus.OK).json(post)
 })
 
+/**
+ * @swagger
+ * /api/post/by_user/{userId}:
+ *   get:
+ *     summary: Get posts by user
+ *     description: Returns all posts created by a specific user
+ *     tags: [Post]
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID of the user whose posts to get
+ *     responses:
+ *       200:
+ *         description: List of posts by user
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   id:
+ *                     type: string
+ *                   content:
+ *                     type: string
+ *                   authorId:
+ *                     type: string
+ *                   images:
+ *                     type: array
+ *                     items:
+ *                       type: string
+ *                   createdAt:
+ *                     type: string
+ *                     format: date-time
+ *       401:
+ *         description: Unauthorized
+ */
 postRouter.get('/by_user/:userId', async (req: Request, res: Response) => {
   const { userId } = res.locals.context
   const { userId: authorId } = req.params
@@ -41,6 +186,58 @@ postRouter.get('/by_user/:userId', async (req: Request, res: Response) => {
   return res.status(HttpStatus.OK).json(posts)
 })
 
+/**
+ * @swagger
+ * /api/post:
+ *   post:
+ *     summary: Create a new post
+ *     description: Create a new post with text content and optional images
+ *     tags: [Post]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - content
+ *             properties:
+ *               content:
+ *                 type: string
+ *                 maxLength: 240
+ *                 description: Text content of the post
+ *               images:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                 maxItems: 4
+ *                 description: Array of image URLs
+ *     responses:
+ *       201:
+ *         description: Post created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 id:
+ *                   type: string
+ *                 content:
+ *                   type: string
+ *                 authorId:
+ *                   type: string
+ *                 images:
+ *                   type: array
+ *                   items:
+ *                     type: string
+ *                 createdAt:
+ *                   type: string
+ *                   format: date-time
+ *       400:
+ *         description: Invalid input data
+ *       401:
+ *         description: Unauthorized
+ */
 postRouter.post('/', BodyValidation(CreatePostInputDTO), async (req: Request, res: Response) => {
   const { userId } = res.locals.context
   const data = req.body
@@ -50,6 +247,30 @@ postRouter.post('/', BodyValidation(CreatePostInputDTO), async (req: Request, re
   return res.status(HttpStatus.CREATED).json(post)
 })
 
+/**
+ * @swagger
+ * /api/post/{postId}:
+ *   delete:
+ *     summary: Delete a post
+ *     description: Delete a post by ID (only the author can delete their own posts)
+ *     tags: [Post]
+ *     parameters:
+ *       - in: path
+ *         name: postId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID of the post to delete
+ *     responses:
+ *       200:
+ *         description: Post deleted successfully
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden - not the post author
+ *       404:
+ *         description: Post not found
+ */
 postRouter.delete('/:postId', async (req: Request, res: Response) => {
   const { userId } = res.locals.context
   const { postId } = req.params

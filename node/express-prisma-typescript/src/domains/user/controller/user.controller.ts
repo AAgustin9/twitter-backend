@@ -13,6 +13,43 @@ export const userRouter = Router()
 // Use dependency injection
 const service: UserService = new UserServiceImpl(new UserRepositoryImpl(db))
 
+/**
+ * @swagger
+ * /api/user:
+ *   get:
+ *     summary: Get user recommendations
+ *     description: Returns a list of recommended users to follow
+ *     tags: [User]
+ *     parameters:
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *         description: Maximum number of users to return
+ *       - in: query
+ *         name: skip
+ *         schema:
+ *           type: integer
+ *         description: Number of users to skip
+ *     responses:
+ *       200:
+ *         description: List of recommended users
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   id:
+ *                     type: string
+ *                   username:
+ *                     type: string
+ *                   email:
+ *                     type: string
+ *       401:
+ *         description: Unauthorized
+ */
 userRouter.get('/', async (req: Request, res: Response) => {
   const { userId } = res.locals.context
   const { limit, skip } = req.query as Record<string, string>
@@ -22,6 +59,30 @@ userRouter.get('/', async (req: Request, res: Response) => {
   return res.status(HttpStatus.OK).json(users)
 })
 
+/**
+ * @swagger
+ * /api/user/me:
+ *   get:
+ *     summary: Get current user profile
+ *     description: Returns the profile of the currently authenticated user
+ *     tags: [User]
+ *     responses:
+ *       200:
+ *         description: User profile
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 id:
+ *                   type: string
+ *                 username:
+ *                   type: string
+ *                 email:
+ *                   type: string
+ *       401:
+ *         description: Unauthorized
+ */
 userRouter.get('/me', async (req: Request, res: Response) => {
   const { userId } = res.locals.context
 
@@ -30,6 +91,39 @@ userRouter.get('/me', async (req: Request, res: Response) => {
   return res.status(HttpStatus.OK).json(user)
 })
 
+/**
+ * @swagger
+ * /api/user/{userId}:
+ *   get:
+ *     summary: Get user profile by ID
+ *     description: Returns the profile of a specific user
+ *     tags: [User]
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID of the user to get
+ *     responses:
+ *       200:
+ *         description: User profile
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 id:
+ *                   type: string
+ *                 username:
+ *                   type: string
+ *                 email:
+ *                   type: string
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: User not found
+ */
 userRouter.get('/:userId', async (req: Request, res: Response) => {
   const { userId: otherUserId } = req.params
 
@@ -38,6 +132,19 @@ userRouter.get('/:userId', async (req: Request, res: Response) => {
   return res.status(HttpStatus.OK).json(user)
 })
 
+/**
+ * @swagger
+ * /api/user:
+ *   delete:
+ *     summary: Delete current user account
+ *     description: Permanently deletes the current user's account
+ *     tags: [User]
+ *     responses:
+ *       200:
+ *         description: User account deleted successfully
+ *       401:
+ *         description: Unauthorized
+ */
 userRouter.delete('/', async (req: Request, res: Response) => {
   const { userId } = res.locals.context
 
