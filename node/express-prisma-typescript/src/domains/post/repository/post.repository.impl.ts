@@ -12,7 +12,9 @@ export class PostRepositoryImpl implements PostRepository {
     const post = await this.db.post.create({
       data: {
         authorId: userId,
-        ...data
+        content: data.content,
+        images: data.images || [],
+        parentId: data.parentId || null
       }
     })
     return new PostDTO(post)
@@ -36,6 +38,49 @@ export class PostRepositoryImpl implements PostRepository {
                 }
               }
             }
+          }
+        ]
+      },
+      cursor: options.after ? { id: options.after } : (options.before) ? { id: options.before } : undefined,
+      skip: options.after ?? options.before ? 1 : undefined,
+      take: options.limit ? (options.before ? -options.limit : options.limit) : undefined,
+      orderBy: [
+        {
+          createdAt: 'desc'
+        },
+        {
+          id: 'asc'
+        }
+      ]
+    })
+    return posts.map((post: any) => new PostDTO(post))
+  }
+
+  async getPostsWithoutComments (options: CursorPagination, userId: string): Promise<PostDTO[]> {
+    // Get public posts or posts from users that userId follows, excluding comments (posts with parentId)
+    const posts = await this.db.post.findMany({
+      where: {
+        AND: [
+          {
+            parentId: null // Exclude comments (posts with a parentId)
+          },
+          {
+            OR: [
+              {
+                author: {
+                  private: false
+                }
+              },
+              {
+                author: {
+                  followers: {
+                    some: {
+                      followerId: userId
+                    }
+                  }
+                }
+              }
+            ]
           }
         ]
       },
@@ -184,5 +229,46 @@ export class PostRepositoryImpl implements PostRepository {
     })
     
     return isFollowing !== null
+  }
+  
+  // Comment methods
+  async createComment(userId: string, parentId: string, data: CreatePostInputDTO): Promise<PostDTO> {
+    // First check if the parent post exists
+    const parentPost = await this.getById(parentId, userId)
+    if (!parentPost) {
+      throw new Error('Parent post not found or not accessible')
+    }
+    
+    // Create the comment
+    const comment = await this.db.post.create({
+      data: {
+        authorId: userId,
+        parentId: parentId,
+        content: data.content,
+        images: data.images || []
+      }
+    })
+    
+    return new PostDTO(comment)
+  }
+  
+  async getCommentsByPostId(postId: string, userId?: string): Promise<PostDTO[]> {
+    // First check if the parent post exists and is accessible
+    const parentPost = await this.getById(postId, userId)
+    if (!parentPost) {
+      return []
+    }
+    
+    // Get all comments for the post
+    const comments = await this.db.post.findMany({
+      where: {
+        parentId: postId
+      },
+      orderBy: {
+        createdAt: 'asc' // Show oldest comments first
+      }
+    })
+    
+    return comments.map(comment => new PostDTO(comment))
   }
 }

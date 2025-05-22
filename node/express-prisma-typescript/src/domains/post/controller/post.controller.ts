@@ -7,7 +7,7 @@ import { db, BodyValidation } from '@utils'
 
 import { PostRepositoryImpl } from '../repository'
 import { PostService, PostServiceImpl } from '../service'
-import { CreatePostInputDTO } from '../dto'
+import { CreateCommentInputDTO, CreatePostInputDTO } from '../dto'
 
 export const postRouter = Router()
 
@@ -278,4 +278,136 @@ postRouter.delete('/:postId', async (req: Request, res: Response) => {
   await service.deletePost(userId, postId)
 
   return res.status(HttpStatus.OK).send(`Deleted post ${postId}`)
+})
+
+/**
+ * @swagger
+ * /api/post/{postId}/comments:
+ *   get:
+ *     summary: Get comments for a post
+ *     description: Returns all comments for a specific post
+ *     tags: [Post]
+ *     parameters:
+ *       - in: path
+ *         name: postId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID of the post to get comments for
+ *     responses:
+ *       200:
+ *         description: List of comments
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   id:
+ *                     type: string
+ *                   content:
+ *                     type: string
+ *                   authorId:
+ *                     type: string
+ *                   parentId:
+ *                     type: string
+ *                   images:
+ *                     type: array
+ *                     items:
+ *                       type: string
+ *                   createdAt:
+ *                     type: string
+ *                     format: date-time
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: Post not found
+ */
+postRouter.get('/:postId/comments', async (req: Request, res: Response) => {
+  const { userId } = res.locals.context
+  const { postId } = req.params
+
+  const comments = await service.getComments(userId, postId)
+
+  return res.status(HttpStatus.OK).json(comments)
+})
+
+/**
+ * @swagger
+ * /api/post/{postId}/comments:
+ *   post:
+ *     summary: Create a comment on a post
+ *     description: Add a new comment to a specific post
+ *     tags: [Post]
+ *     parameters:
+ *       - in: path
+ *         name: postId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID of the post to comment on
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - content
+ *             properties:
+ *               content:
+ *                 type: string
+ *                 maxLength: 240
+ *                 description: Text content of the comment
+ *               images:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                 maxItems: 4
+ *                 description: Array of image URLs
+ *     responses:
+ *       201:
+ *         description: Comment created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 id:
+ *                   type: string
+ *                 content:
+ *                   type: string
+ *                 authorId:
+ *                   type: string
+ *                 parentId:
+ *                   type: string
+ *                 images:
+ *                   type: array
+ *                   items:
+ *                     type: string
+ *                 createdAt:
+ *                   type: string
+ *                   format: date-time
+ *       400:
+ *         description: Invalid input data
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: Post not found
+ */
+postRouter.post('/:postId/comments', BodyValidation(CreatePostInputDTO), async (req: Request, res: Response) => {
+  const { userId } = res.locals.context
+  const { postId } = req.params
+  const data = req.body
+
+  // Create a comment with the required data
+  const commentData = new CreateCommentInputDTO()
+  commentData.content = data.content
+  commentData.images = data.images
+  commentData.parentId = postId
+
+  const comment = await service.createComment(userId, commentData)
+
+  return res.status(HttpStatus.CREATED).json(comment)
 })

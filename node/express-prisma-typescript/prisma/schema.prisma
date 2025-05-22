@@ -55,6 +55,11 @@ model Post {
   authorId String   @db.Uuid // Foreign Key
   content  String   @db.VarChar(240) // Limit the content to 240 characters
   images   String[]
+  
+  // Comment relationship
+  parentId String?  @db.Uuid // Nullable Foreign Key to parent post
+  parent   Post?    @relation("Comments", fields: [parentId], references: [id], onDelete: Cascade)
+  comments Post[]   @relation("Comments")
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt

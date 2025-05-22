@@ -1,4 +1,4 @@
-import { CreatePostInputDTO, PostDTO } from '../dto'
+import { CreateCommentInputDTO, CreatePostInputDTO, PostDTO } from '../dto'
 import { PostRepository } from '../repository'
 import { PostService } from '.'
 import { validate } from 'class-validator'
@@ -27,7 +27,7 @@ export class PostServiceImpl implements PostService {
   }
 
   async getLatestPosts (userId: string, options: CursorPagination): Promise<PostDTO[]> {
-    return await this.repository.getAllByDatePaginated(options, userId)
+    return await this.repository.getPostsWithoutComments(options, userId)
   }
 
   async getPostsByAuthor (userId: string, authorId: string): Promise<PostDTO[]> {
@@ -46,5 +46,24 @@ export class PostServiceImpl implements PostService {
     }
     
     return await this.repository.getByAuthorId(authorId, userId)
+  }
+  
+  // Comment methods
+  async createComment(userId: string, data: CreateCommentInputDTO): Promise<PostDTO> {
+    await validate(data)
+    
+    // Check if parent post exists and is accessible
+    const parentPost = await this.repository.getById(data.parentId, userId)
+    if (!parentPost) throw new NotFoundException('post')
+    
+    return await this.repository.createComment(userId, data.parentId, data)
+  }
+  
+  async getComments(userId: string, postId: string): Promise<PostDTO[]> {
+    // Check if parent post exists and is accessible
+    const parentPost = await this.repository.getById(postId, userId)
+    if (!parentPost) throw new NotFoundException('post')
+    
+    return await this.repository.getCommentsByPostId(postId, userId)
   }
 }
