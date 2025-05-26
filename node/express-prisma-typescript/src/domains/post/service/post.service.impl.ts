@@ -4,6 +4,7 @@ import { PostService } from '.'
 import { validate } from 'class-validator'
 import { ForbiddenException, NotFoundException } from '@utils'
 import { CursorPagination } from '@types'
+import { ImageType, generatePresignedUploadUrl, generateS3Key, getPublicImageUrl } from '@utils'
 
 export class PostServiceImpl implements PostService {
   constructor (private readonly repository: PostRepository) {}
@@ -83,5 +84,21 @@ export class PostServiceImpl implements PostService {
     }
     
     return await this.repository.getCommentsByUserId(authorId, viewerId)
+  }
+  
+  // Image upload method
+  async getPostImageUploadUrl(userId: string, contentType: string): Promise<{ uploadUrl: string, imageUrl: string, key: string }> {
+    // Generate a unique key for the image
+    const key = generateS3Key(ImageType.POST, userId)
+    
+    // Get a pre-signed URL for uploading
+    const { url: uploadUrl } = await generatePresignedUploadUrl(key, contentType)
+    
+    // Return both the upload URL and the future public URL
+    return {
+      uploadUrl,
+      imageUrl: getPublicImageUrl(key),
+      key
+    }
   }
 }

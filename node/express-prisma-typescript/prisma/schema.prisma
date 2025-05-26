@@ -24,6 +24,7 @@ model User {
   email    String  @unique // Unique constraint
   password String
   private  Boolean @default(false) // Whether the user has a private profile
+  profileImageKey String? // S3 key for profile image
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt

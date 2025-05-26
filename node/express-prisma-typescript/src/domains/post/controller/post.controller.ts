@@ -2,6 +2,7 @@ import { Request, Response, Router } from 'express'
 import HttpStatus from 'http-status'
 // express-async-errors is a module that handles async errors in express, don't forget import it in your new controllers
 import 'express-async-errors'
+import { IsNotEmpty, IsString, Matches } from 'class-validator'
 
 import { db, BodyValidation } from '@utils'
 
@@ -463,4 +464,67 @@ postRouter.get('/user/:userId/comments', async (req: Request, res: Response) => 
   const comments = await service.getUserComments(userId, authorId)
 
   return res.status(HttpStatus.OK).json(comments)
+})
+
+// Type definitions for image upload request
+class PostImageUploadRequestDTO {
+  @IsNotEmpty()
+  @IsString()
+  @Matches(/^image\/(jpeg|png|gif|webp)$/, { message: 'Content type must be a valid image format' })
+  contentType!: string
+}
+
+/**
+ * @swagger
+ * /api/post/image/upload-url:
+ *   post:
+ *     summary: Get pre-signed URL for post image upload
+ *     description: Generates a pre-signed URL for direct upload to S3
+ *     tags: [Post]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - contentType
+ *             properties:
+ *               contentType:
+ *                 type: string
+ *                 description: MIME type of the image (e.g., image/jpeg, image/png)
+ *     responses:
+ *       200:
+ *         description: Pre-signed URL for uploading
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 uploadUrl:
+ *                   type: string
+ *                   description: Pre-signed URL for uploading the image
+ *                 imageUrl:
+ *                   type: string
+ *                   description: URL where the image will be accessible after upload
+ *                 key:
+ *                   type: string
+ *                   description: S3 key for the image (to be included in post creation)
+ *       400:
+ *         description: Invalid content type
+ *       401:
+ *         description: Unauthorized
+ */
+postRouter.post('/image/upload-url', BodyValidation(PostImageUploadRequestDTO), async (req: Request, res: Response) => {
+  const { userId } = res.locals.context
+  const { contentType } = req.body
+
+  // Validate content type
+  if (!contentType.match(/^image\/(jpeg|png|gif|webp)$/)) {
+    return res.status(HttpStatus.BAD_REQUEST).json({ error: 'Invalid content type. Must be a supported image format.' })
+  }
+
+  const result = await service.getPostImageUploadUrl(userId, contentType)
+
+  return res.status(HttpStatus.OK).json(result)
 })

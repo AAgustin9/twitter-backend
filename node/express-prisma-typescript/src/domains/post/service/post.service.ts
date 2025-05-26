@@ -11,4 +11,7 @@ export interface PostService {
   createComment: (userId: string, body: CreateCommentInputDTO) => Promise<PostDTO>
   getComments: (userId: string, postId: string) => Promise<PostDTO[]>
   getUserComments: (userId: string, authorId: string) => Promise<PostDTO[]>
+  
+  // Image upload method
+  getPostImageUploadUrl: (userId: string, contentType: string) => Promise<{ uploadUrl: string, imageUrl: string, key: string }>
 }

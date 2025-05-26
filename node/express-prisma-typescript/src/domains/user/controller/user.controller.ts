@@ -2,8 +2,9 @@ import { Request, Response, Router } from 'express'
 import HttpStatus from 'http-status'
 // express-async-errors is a module that handles async errors in express, don't forget import it in your new controllers
 import 'express-async-errors'
+import { IsNotEmpty, IsString, Matches } from 'class-validator'
 
-import { db } from '@utils'
+import { db, BodyValidation } from '@utils'
 
 import { UserRepositoryImpl } from '../repository'
 import { UserService, UserServiceImpl } from '../service'
@@ -12,6 +13,20 @@ export const userRouter = Router()
 
 // Use dependency injection
 const service: UserService = new UserServiceImpl(new UserRepositoryImpl(db))
+
+// Type definitions for request bodies
+class ProfileImageUploadRequestDTO {
+  @IsNotEmpty()
+  @IsString()
+  @Matches(/^image\/(jpeg|png|gif|webp)$/, { message: 'Content type must be a valid image format' })
+  contentType!: string
+}
+
+class ProfileImageUpdateRequestDTO {
+  @IsNotEmpty()
+  @IsString()
+  imageKey!: string
+}
 
 /**
  * @swagger
@@ -45,7 +60,9 @@ const service: UserService = new UserServiceImpl(new UserRepositoryImpl(db))
  *                     type: string
  *                   username:
  *                     type: string
- *                   email:
+ *                   name:
+ *                     type: string
+ *                   profileImageUrl:
  *                     type: string
  *       401:
  *         description: Unauthorized
@@ -78,7 +95,9 @@ userRouter.get('/', async (req: Request, res: Response) => {
  *                   type: string
  *                 username:
  *                   type: string
- *                 email:
+ *                 name:
+ *                   type: string
+ *                 profileImageUrl:
  *                   type: string
  *       401:
  *         description: Unauthorized
@@ -117,7 +136,9 @@ userRouter.get('/me', async (req: Request, res: Response) => {
  *                   type: string
  *                 username:
  *                   type: string
- *                 email:
+ *                 name:
+ *                   type: string
+ *                 profileImageUrl:
  *                   type: string
  *       401:
  *         description: Unauthorized
@@ -151,4 +172,115 @@ userRouter.delete('/', async (req: Request, res: Response) => {
   await service.deleteUser(userId)
 
   return res.status(HttpStatus.OK)
+})
+
+/**
+ * @swagger
+ * /api/user/profile-image/upload-url:
+ *   post:
+ *     summary: Get pre-signed URL for profile image upload
+ *     description: Generates a pre-signed URL for direct upload to S3
+ *     tags: [User]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - contentType
+ *             properties:
+ *               contentType:
+ *                 type: string
+ *                 description: MIME type of the image (e.g., image/jpeg, image/png)
+ *     responses:
+ *       200:
+ *         description: Pre-signed URL for uploading
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 uploadUrl:
+ *                   type: string
+ *                   description: Pre-signed URL for uploading the image
+ *                 profileImageUrl:
+ *                   type: string
+ *                   description: URL where the image will be accessible after upload
+ *                 key:
+ *                   type: string
+ *                   description: S3 key for the image (used for updating user profile)
+ *       400:
+ *         description: Invalid content type
+ *       401:
+ *         description: Unauthorized
+ */
+userRouter.post('/profile-image/upload-url', BodyValidation(ProfileImageUploadRequestDTO), async (req: Request, res: Response) => {
+  const { userId } = res.locals.context
+  const { contentType } = req.body
+
+  // Validate content type
+  if (!contentType.match(/^image\/(jpeg|png|gif|webp)$/)) {
+    return res.status(HttpStatus.BAD_REQUEST).json({ error: 'Invalid content type. Must be a supported image format.' })
+  }
+
+  const { uploadUrl, profileImageUrl } = await service.getProfileImageUploadUrl(userId, contentType)
+
+  // Extract key from the URL
+  const key = profileImageUrl.split('.s3.amazonaws.com/')[1]
+
+  return res.status(HttpStatus.OK).json({
+    uploadUrl,
+    profileImageUrl,
+    key
+  })
+})
+
+/**
+ * @swagger
+ * /api/user/profile-image:
+ *   patch:
+ *     summary: Update user profile image
+ *     description: Updates the user's profile image using an S3 key
+ *     tags: [User]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - imageKey
+ *             properties:
+ *               imageKey:
+ *                 type: string
+ *                 description: S3 key of the uploaded image
+ *     responses:
+ *       200:
+ *         description: Updated user profile
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 id:
+ *                   type: string
+ *                 username:
+ *                   type: string
+ *                 name:
+ *                   type: string
+ *                 profileImageUrl:
+ *                   type: string
+ *       400:
+ *         description: Invalid image key
+ *       401:
+ *         description: Unauthorized
+ */
+userRouter.patch('/profile-image', BodyValidation(ProfileImageUpdateRequestDTO), async (req: Request, res: Response) => {
+  const { userId } = res.locals.context
+  const { imageKey } = req.body
+
+  const updatedUser = await service.updateProfileImage(userId, imageKey)
+
+  return res.status(HttpStatus.OK).json(updatedUser)
 })

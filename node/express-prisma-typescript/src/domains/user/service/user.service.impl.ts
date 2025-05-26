@@ -1,3 +1,4 @@
+import { ImageType, getPublicImageUrl, generatePresignedUploadUrl, generateS3Key } from '@utils'
 import { NotFoundException } from '@utils/errors'
 import { OffsetPagination } from 'types'
 import { UserDTO } from '../dto'
@@ -20,5 +21,28 @@ export class UserServiceImpl implements UserService {
 
   async deleteUser (userId: any): Promise<void> {
     await this.repository.delete(userId)
+  }
+  
+  async getProfileImageUploadUrl(userId: string, contentType: string): Promise<{ uploadUrl: string, profileImageUrl: string }> {
+    // Generate a unique key for the image
+    const key = generateS3Key(ImageType.PROFILE, userId)
+    
+    // Get a pre-signed URL for uploading
+    const { url: uploadUrl } = await generatePresignedUploadUrl(key, contentType)
+    
+    // Return both the upload URL and the future public URL
+    return {
+      uploadUrl,
+      profileImageUrl: getPublicImageUrl(key)
+    }
+  }
+  
+  async updateProfileImage(userId: string, imageKey: string): Promise<UserDTO> {
+    // Ensure user exists
+    const user = await this.repository.getById(userId)
+    if (!user) throw new NotFoundException('user')
+    
+    // Update the user's profile image
+    return await this.repository.updateProfileImage(userId, imageKey)
   }
 }
