@@ -35,10 +35,12 @@ export class UserViewDTO {
     this.name = user.name
     this.username = user.username
     this.profileImageUrl = user.profileImageUrl
+    this.isFollowing = user.isFollowing
   }
 
   id: string
   name: string
   username: string
   profileImageUrl: string | null
+  isFollowing?: boolean
 }

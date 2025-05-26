@@ -8,11 +8,16 @@ import { db, BodyValidation } from '@utils'
 
 import { UserRepositoryImpl } from '../repository'
 import { UserService, UserServiceImpl } from '../service'
+import { FollowerRepositoryImpl } from '@domains/follower/repository'
+import { FollowerServiceImpl } from '@domains/follower/service'
 
 export const userRouter = Router()
 
 // Use dependency injection
-const service: UserService = new UserServiceImpl(new UserRepositoryImpl(db))
+const service: UserService = new UserServiceImpl(
+  new UserRepositoryImpl(db),
+  new FollowerServiceImpl(new FollowerRepositoryImpl(db))
+)
 
 // Type definitions for request bodies
 class ProfileImageUploadRequestDTO {
@@ -105,7 +110,7 @@ userRouter.get('/', async (req: Request, res: Response) => {
 userRouter.get('/me', async (req: Request, res: Response) => {
   const { userId } = res.locals.context
 
-  const user = await service.getUser(userId)
+  const user = await service.getUser(userId, userId)
 
   return res.status(HttpStatus.OK).json(user)
 })
@@ -156,13 +161,14 @@ userRouter.get('/me', async (req: Request, res: Response) => {
  *         description: Unauthorized
  */
 userRouter.get('/by_username/:username', async (req: Request, res: Response) => {
+  const { userId } = res.locals.context
   const { username } = req.params
   const { limit, skip } = req.query as Record<string, string>
 
   const users = await service.searchUsersByUsername(username, { 
     limit: limit ? Number(limit) : undefined, 
     skip: skip ? Number(skip) : undefined 
-  })
+  }, userId)
 
   return res.status(HttpStatus.OK).json(users)
 })
@@ -203,9 +209,10 @@ userRouter.get('/by_username/:username', async (req: Request, res: Response) => 
  *         description: User not found
  */
 userRouter.get('/:userId', async (req: Request, res: Response) => {
-  const { userId: otherUserId } = req.params
+  const { userId: viewerId } = res.locals.context
+  const { userId: targetUserId } = req.params
 
-  const user = await service.getUser(otherUserId)
+  const user = await service.getUser(targetUserId, viewerId)
 
   return res.status(HttpStatus.OK).json(user)
 })
