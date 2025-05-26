@@ -5,6 +5,7 @@ export interface UserService {
   deleteUser: (userId: any) => Promise<void>
   getUser: (userId: any) => Promise<UserViewDTO>
   getUserRecommendations: (userId: any, options: OffsetPagination) => Promise<UserViewDTO[]>
+  searchUsersByUsername: (username: string, options: OffsetPagination) => Promise<UserViewDTO[]>
   
   // Image operations
   getProfileImageUploadUrl: (userId: string, contentType: string) => Promise<{ uploadUrl: string, profileImageUrl: string }>

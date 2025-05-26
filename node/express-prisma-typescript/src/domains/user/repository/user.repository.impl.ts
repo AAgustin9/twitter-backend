@@ -104,4 +104,33 @@ export class UserRepositoryImpl implements UserRepository {
     userDTO.profileImageUrl = getPublicImageUrl(profileImageKey)
     return userDTO
   }
+
+  async searchUsersByUsername(username: string, options: OffsetPagination): Promise<UserDTO[]> {
+    const users = await this.db.user.findMany({
+      where: {
+        username: {
+          contains: username,
+          mode: 'insensitive' // Case-insensitive search
+        },
+        deletedAt: null // Only include non-deleted users
+      },
+      take: options.limit ? options.limit : undefined,
+      skip: options.skip ? options.skip : undefined,
+      orderBy: [
+        {
+          username: 'asc' // Sort by username alphabetically
+        },
+        {
+          id: 'asc'
+        }
+      ]
+    }) as UserWithProfileImage[]
+    
+    // Map to UserDTO with profile image URLs
+    return users.map(user => {
+      const userDTO = new UserDTO(user)
+      userDTO.profileImageUrl = user.profileImageKey ? getPublicImageUrl(user.profileImageKey) : null
+      return userDTO
+    })
+  }
 }

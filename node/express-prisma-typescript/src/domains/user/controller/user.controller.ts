@@ -112,6 +112,63 @@ userRouter.get('/me', async (req: Request, res: Response) => {
 
 /**
  * @swagger
+ * /api/user/by_username/{username}:
+ *   get:
+ *     summary: Search users by username
+ *     description: Returns a list of users whose usernames contain the provided search term
+ *     tags: [User]
+ *     parameters:
+ *       - in: path
+ *         name: username
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Username search term (partial match, case-insensitive)
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *         description: Maximum number of users to return
+ *       - in: query
+ *         name: skip
+ *         schema:
+ *           type: integer
+ *         description: Number of users to skip for pagination
+ *     responses:
+ *       200:
+ *         description: List of users matching the search term
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   id:
+ *                     type: string
+ *                   username:
+ *                     type: string
+ *                   name:
+ *                     type: string
+ *                   profileImageUrl:
+ *                     type: string
+ *       401:
+ *         description: Unauthorized
+ */
+userRouter.get('/by_username/:username', async (req: Request, res: Response) => {
+  const { username } = req.params
+  const { limit, skip } = req.query as Record<string, string>
+
+  const users = await service.searchUsersByUsername(username, { 
+    limit: limit ? Number(limit) : undefined, 
+    skip: skip ? Number(skip) : undefined 
+  })
+
+  return res.status(HttpStatus.OK).json(users)
+})
+
+/**
+ * @swagger
  * /api/user/{userId}:
  *   get:
  *     summary: Get user profile by ID
