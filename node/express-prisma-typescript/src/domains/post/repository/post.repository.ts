@@ -6,7 +6,7 @@ export interface PostRepository {
   getAllByDatePaginated: (options: CursorPagination, userId: string) => Promise<PostDTO[]>
   delete: (postId: string) => Promise<void>
   getById: (postId: string, userId?: string) => Promise<PostDTO | null>
-  getByAuthorId: (authorId: string, userId?: string) => Promise<PostDTO[]>
+  getByAuthorId: (authorId: string, userId?: string) => Promise<ExtendedPostDTO[]>
   canViewPost: (post: PostDTO, userId: string) => Promise<boolean>
   getAuthorPrivacyInfo: (authorId: string) => Promise<{ private: boolean } | null>
   canAccessAuthorPosts: (userId: string, authorId: string) => Promise<boolean>
@@ -15,6 +15,6 @@ export interface PostRepository {
   createComment: (userId: string, parentId: string, data: CreatePostInputDTO) => Promise<PostDTO>
   getCommentsByPostId: (postId: string, userId?: string) => Promise<PostDTO[]>
   getCommentsByPostIdPaginated: (postId: string, options: CursorPagination, userId?: string) => Promise<ExtendedPostDTO[]>
-  getPostsWithoutComments: (options: CursorPagination, userId: string) => Promise<PostDTO[]>
+  getPostsWithoutComments: (options: CursorPagination, userId: string) => Promise<ExtendedPostDTO[]>
   getCommentsByUserId: (userId: string, viewerId?: string) => Promise<PostDTO[]>
 }

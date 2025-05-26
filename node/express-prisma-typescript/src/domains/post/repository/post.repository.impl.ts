@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client'
+import { PrismaClient, User, Prisma } from '@prisma/client'
 
 import { CursorPagination } from '@types'
 
@@ -57,48 +57,56 @@ export class PostRepositoryImpl implements PostRepository {
     return posts.map((post: any) => new PostDTO(post))
   }
 
-  async getPostsWithoutComments (options: CursorPagination, userId: string): Promise<PostDTO[]> {
-    // Get public posts or posts from users that userId follows, excluding comments (posts with parentId)
+  async getPostsWithoutComments(options: CursorPagination, userId: string): Promise<ExtendedPostDTO[]> {
     const posts = await this.db.post.findMany({
       where: {
-        AND: [
+        parentId: null,
+        OR: [
+          { author: { private: false } },
           {
-            parentId: null // Exclude comments (posts with a parentId)
-          },
-          {
-            OR: [
-              {
-                author: {
-                  private: false
-                }
-              },
-              {
-                author: {
-                  followers: {
-                    some: {
-                      followerId: userId
-                    }
-                  }
-                }
+            author: {
+              followers: {
+                some: { followerId: userId }
               }
-            ]
+            }
           }
         ]
       },
-      cursor: options.after ? { id: options.after } : (options.before) ? { id: options.before } : undefined,
-      skip: options.after ?? options.before ? 1 : undefined,
+      include: {
+        author: true,
+        comments: {
+          include: { author: true }
+        },
+        parent: {
+          include: { author: true }
+        },
+        reactions: true
+      },
+      cursor: options.after ? { id: options.after } : options.before ? { id: options.before } : undefined,
+      skip: options.after || options.before ? 1 : undefined,
       take: options.limit ? (options.before ? -options.limit : options.limit) : undefined,
       orderBy: [
-        {
-          createdAt: 'desc'
-        },
-        {
-          id: 'asc'
-        }
+        { createdAt: 'desc' },
+        { id: 'asc' }
       ]
     })
-    return posts.map((post: any) => new PostDTO(post))
+    
+    return posts.map((post: any) => {
+      const qtyLikes = post.reactions.filter((r: any) => r.type === 'LIKE').length
+      const qtyRetweets = post.reactions.filter((r: any) => r.type === 'RETWEET').length
+    
+      return new ExtendedPostDTO({
+        ...post,
+        qtyComments: post.comments.length,
+        qtyLikes,
+        qtyRetweets,
+        comments: post.comments,
+        parent: post.parent,
+        author: post.author
+      })
+    })
   }
+  
 
   async delete (postId: string): Promise<void> {
     await this.db.post.delete({
@@ -134,7 +142,7 @@ export class PostRepositoryImpl implements PostRepository {
     return postDTO
   }
 
-  async getByAuthorId (authorId: string, userId?: string): Promise<PostDTO[]> {
+  async getByAuthorId (authorId: string, userId?: string): Promise<ExtendedPostDTO[]> {
     // Get the author info to check privacy
     const author = await this.db.user.findUnique({
       where: {
@@ -148,34 +156,55 @@ export class PostRepositoryImpl implements PostRepository {
     // If author doesn't exist, return empty array
     if (!author) return []
     
-    // If author is not private, or no userId provided, return all posts
-    if (!author.private || !userId) {
-      const posts = await this.db.post.findMany({
+    // If author is not private, or no userId provided, get posts with extended data
+    const query = {
+      where: {
+        authorId,
+        deletedAt: null
+      },
+      include: {
+        author: true,
+        comments: {
+          include: { author: true }
+        },
+        reactions: true
+      },
+      orderBy: [
+        { createdAt: Prisma.SortOrder.desc },
+        { id: Prisma.SortOrder.asc }
+      ]
+    }
+
+    // If author is private and userId is provided, check if they can access
+    if (author.private && userId) {
+      const isFollowing = await this.db.follow.findFirst({
         where: {
-          authorId
+          followerId: userId,
+          followedId: authorId
         }
       })
-      return posts.map((post: any) => new PostDTO(post))
+      
+      // If not following, return empty array
+      if (!isFollowing) return []
     }
     
-    // If author is private, check if userId follows them
-    const isFollowing = await this.db.follow.findFirst({
-      where: {
-        followerId: userId,
-        followedId: authorId
-      }
-    })
+    // Get posts with extended data
+    const posts = await this.db.post.findMany(query)
     
-    // If not following, return empty array
-    if (!isFollowing) return []
+    // Map to ExtendedPostDTO with reaction counts
+    return posts.map((post: any) => {
+      const qtyLikes = post.reactions.filter((r: any) => r.type === 'LIKE').length
+      const qtyRetweets = post.reactions.filter((r: any) => r.type === 'RETWEET').length
     
-    // If following, return posts
-    const posts = await this.db.post.findMany({
-      where: {
-        authorId
-      }
+      return new ExtendedPostDTO({
+        ...post,
+        qtyComments: post.comments.length,
+        qtyLikes,
+        qtyRetweets,
+        comments: post.comments,
+        author: post.author
+      })
     })
-    return posts.map((post: any) => new PostDTO(post))
   }
 
   async canViewPost(post: PostDTO, userId: string): Promise<boolean> {

@@ -27,11 +27,11 @@ export class PostServiceImpl implements PostService {
     return post
   }
 
-  async getLatestPosts (userId: string, options: CursorPagination): Promise<PostDTO[]> {
+  async getLatestPosts (userId: string, options: CursorPagination): Promise<ExtendedPostDTO[]> {
     return await this.repository.getPostsWithoutComments(options, userId)
   }
 
-  async getPostsByAuthor (userId: string, authorId: string): Promise<PostDTO[]> {
+  async getPostsByAuthor (userId: string, authorId: string): Promise<ExtendedPostDTO[]> {
     // First check if the author exists and if they have a private account
     const authorInfo = await this.repository.getAuthorPrivacyInfo(authorId)
     if (!authorInfo) {
