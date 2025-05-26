@@ -1,5 +1,5 @@
 import { CursorPagination } from '@types'
-import { CreatePostInputDTO, PostDTO } from '../dto'
+import { CreatePostInputDTO, PostDTO, ExtendedPostDTO } from '../dto'
 
 export interface PostRepository {
   create: (userId: string, data: CreatePostInputDTO) => Promise<PostDTO>
@@ -14,6 +14,7 @@ export interface PostRepository {
   // Comment methods
   createComment: (userId: string, parentId: string, data: CreatePostInputDTO) => Promise<PostDTO>
   getCommentsByPostId: (postId: string, userId?: string) => Promise<PostDTO[]>
+  getCommentsByPostIdPaginated: (postId: string, options: CursorPagination, userId?: string) => Promise<ExtendedPostDTO[]>
   getPostsWithoutComments: (options: CursorPagination, userId: string) => Promise<PostDTO[]>
   getCommentsByUserId: (userId: string, viewerId?: string) => Promise<PostDTO[]>
 }

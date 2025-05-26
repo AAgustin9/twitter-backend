@@ -3,7 +3,8 @@ import { PrismaClient } from '@prisma/client'
 import { CursorPagination } from '@types'
 
 import { PostRepository } from '.'
-import { CreatePostInputDTO, PostDTO } from '../dto'
+import { CreatePostInputDTO, PostDTO, ExtendedPostDTO } from '../dto'
+import { ExtendedUserDTO } from '@domains/user/dto'
 
 export class PostRepositoryImpl implements PostRepository {
   constructor (private readonly db: PrismaClient) {}
@@ -316,5 +317,99 @@ export class PostRepositoryImpl implements PostRepository {
     return filteredComments
       .filter(comment => comment !== null)
       .map(comment => new PostDTO(comment!))
+  }
+
+  async getCommentsByPostIdPaginated(postId: string, options: CursorPagination, userId?: string): Promise<ExtendedPostDTO[]> {
+    // First check if the parent post exists and is accessible
+    const parentPost = await this.getById(postId, userId)
+    if (!parentPost) {
+      return []
+    }
+
+    // Get comments with their authors and reaction counts, sorted by total reactions
+    const comments = await this.db.post.findMany({
+      where: {
+        parentId: postId,
+        deletedAt: null
+      },
+      include: {
+        author: {
+          select: {
+            id: true,
+            username: true,
+            name: true,
+            email: true,
+            password: true,
+            private: true,
+            profileImageKey: true,
+            createdAt: true,
+            updatedAt: true,
+            deletedAt: true
+          }
+        },
+        reactions: {
+          where: {
+            deletedAt: null
+          },
+          include: {
+            user: {
+              select: {
+                id: true,
+                username: true,
+                name: true
+              }
+            }
+          }
+        },
+        _count: {
+          select: {
+            reactions: true,
+            comments: true
+          }
+        }
+      },
+      cursor: options.after ? { id: options.after } : (options.before) ? { id: options.before } : undefined,
+      skip: options.after ?? options.before ? 1 : undefined,
+      take: options.limit ? (options.before ? -options.limit : options.limit) : undefined,
+      orderBy: [
+        {
+          reactions: {
+            _count: 'desc'
+          }
+        },
+        {
+          createdAt: 'desc'
+        },
+        {
+          id: 'asc'
+        }
+      ]
+    })
+
+    // Map to ExtendedPostDTO
+    return comments.map((comment: any) => {
+      const authorDTO = new ExtendedUserDTO(comment.author)
+      
+      // Count reactions by type
+      const likes = comment.reactions.filter((r: any) => r.type === 'LIKE').length
+      const retweets = comment.reactions.filter((r: any) => r.type === 'RETWEET').length
+      
+      const extendedPost = new ExtendedPostDTO({
+        id: comment.id,
+        authorId: comment.authorId,
+        content: comment.content,
+        images: comment.images,
+        parentId: comment.parentId,
+        createdAt: comment.createdAt,
+        author: authorDTO,
+        qtyComments: comment._count.comments,
+        qtyLikes: likes,
+        qtyRetweets: retweets,
+        parent: undefined,
+        comments: undefined
+      })
+      
+      return extendedPost
+    })
   }
 }
