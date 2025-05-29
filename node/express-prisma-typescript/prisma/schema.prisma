@@ -34,6 +34,12 @@ model User {
   follows   Follow[] @relation(name: "follows")
   followers Follow[] @relation(name: "followers")
   reactions Reaction[]
+  
+  // Chat relationships
+  sentMessages     Message[] @relation(name: "SentMessages")
+  receivedMessages Message[] @relation(name: "ReceivedMessages")
+  publicKey        String?   // RSA public key for encryption
+  privateKey       String?   // RSA private key for decryption (encrypted with user password)
 }
 
 model Follow {
@@ -90,4 +96,22 @@ model Reaction {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade) // One to many
 
   @@unique([postId, userId, type]) // Ensures a user can only like or retweet a post once
+}
+
+model Message {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid // Primary Key
+  
+  senderId   String @db.Uuid // Foreign Key
+  receiverId String @db.Uuid // Foreign Key
+  content    String @db.Text // Encrypted message content
+  
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime? // Optional value
+  
+  sender   User @relation(name: "SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver User @relation(name: "ReceivedMessages", fields: [receiverId], references: [id], onDelete: Cascade)
+  
+  @@index([senderId, receiverId])
+  @@index([createdAt])
 }
