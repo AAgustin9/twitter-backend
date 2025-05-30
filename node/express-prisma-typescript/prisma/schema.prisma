@@ -23,6 +23,8 @@ model User {
   name     String? @db.VarChar(35) // Limit display name to 35 characters
   email    String  @unique // Unique constraint
   password String
+  private  Boolean @default(false) // Whether the user has a private profile
+  profileImageKey String? // S3 key for profile image
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -31,6 +33,13 @@ model User {
   posts     Post[]
   follows   Follow[] @relation(name: "follows")
   followers Follow[] @relation(name: "followers")
+  reactions Reaction[]
+  
+  // Chat relationships
+  sentMessages     Message[] @relation(name: "SentMessages")
+  receivedMessages Message[] @relation(name: "ReceivedMessages")
+  publicKey        String?   // RSA public key for encryption
+  privateKey       String?   // RSA private key for decryption (encrypted with user password)
 }
 
 model Follow {
@@ -53,10 +62,56 @@ model Post {
   authorId String   @db.Uuid // Foreign Key
   content  String   @db.VarChar(240) // Limit the content to 240 characters
   images   String[]
+  
+  // Comment relationship
+  parentId String?  @db.Uuid // Nullable Foreign Key to parent post
+  parent   Post?    @relation("Comments", fields: [parentId], references: [id], onDelete: Cascade)
+  comments Post[]   @relation("Comments")
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   deletedAt DateTime? // Optional value
 
   author User @relation(fields: [authorId], references: [id], onDelete: Cascade) // One to many
+  reactions Reaction[]
+}
+
+enum ReactionType {
+  LIKE
+  RETWEET
+}
+
+model Reaction {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid // Primary Key
+
+  postId String @db.Uuid // Foreign Key
+  userId String @db.Uuid // Foreign Key
+  type   ReactionType
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime? // Optional value
+
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade) // One to many
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade) // One to many
+
+  @@unique([postId, userId, type]) // Ensures a user can only like or retweet a post once
+}
+
+model Message {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid // Primary Key
+  
+  senderId   String @db.Uuid // Foreign Key
+  receiverId String @db.Uuid // Foreign Key
+  content    String @db.Text // Encrypted message content
+  
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime? // Optional value
+  
+  sender   User @relation(name: "SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver User @relation(name: "ReceivedMessages", fields: [receiverId], references: [id], onDelete: Cascade)
+  
+  @@index([senderId, receiverId])
+  @@index([createdAt])
 }

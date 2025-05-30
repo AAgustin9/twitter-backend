@@ -2,12 +2,18 @@ import express from 'express'
 import morgan from 'morgan'
 import cookieParser from 'cookie-parser'
 import cors from 'cors'
+import { createServer } from 'http'
 
-import { Constants, NodeEnv, Logger } from '@utils'
+import { Constants, NodeEnv, Logger, setupSwagger } from '@utils'
 import { router } from '@router'
 import { ErrorHandling } from '@utils/errors'
+import { ChatSocket } from './domains/chat/socket/chat.socket'
 
 const app = express()
+const server = createServer(app)
+
+// Initialize Socket.IO for chat
+new ChatSocket(server)
 
 // Set up request logger
 if (Constants.NODE_ENV === NodeEnv.DEV) {
@@ -26,10 +32,14 @@ app.use(
   })
 )
 
+// Setup Swagger documentation
+setupSwagger(app)
+
 app.use('/api', router)
 
 app.use(ErrorHandling)
 
-app.listen(Constants.PORT, () => {
+server.listen(Constants.PORT, () => {
   Logger.info(`Server listening on port ${Constants.PORT}`)
+  Logger.info(`API documentation available at http://localhost:${Constants.PORT}/api-docs`)
 })

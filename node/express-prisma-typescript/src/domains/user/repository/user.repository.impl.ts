@@ -1,16 +1,27 @@
 import { SignupInputDTO } from '@domains/auth/dto'
-import { PrismaClient } from '@prisma/client'
+import { PrismaClient, User } from '@prisma/client'
 import { OffsetPagination } from '@types'
+import { getPublicImageUrl } from '@utils'
 import { ExtendedUserDTO, UserDTO } from '../dto'
 import { UserRepository } from './user.repository'
+
+// Define a type that includes our custom profileImageKey field
+type UserWithProfileImage = User & {
+  profileImageKey?: string | null;
+}
 
 export class UserRepositoryImpl implements UserRepository {
   constructor (private readonly db: PrismaClient) {}
 
   async create (data: SignupInputDTO): Promise<UserDTO> {
-    return await this.db.user.create({
+    const user = await this.db.user.create({
       data
-    }).then(user => new UserDTO(user))
+    }) as UserWithProfileImage
+    
+    // Create UserDTO with the profile image URL
+    const userDTO = new UserDTO(user)
+    userDTO.profileImageUrl = user.profileImageKey ? getPublicImageUrl(user.profileImageKey) : null
+    return userDTO
   }
 
   async getById (userId: any): Promise<UserDTO | null> {
@@ -18,8 +29,14 @@ export class UserRepositoryImpl implements UserRepository {
       where: {
         id: userId
       }
-    })
-    return user ? new UserDTO(user) : null
+    }) as UserWithProfileImage | null
+    
+    if (!user) return null
+    
+    // Create UserDTO with the profile image URL
+    const userDTO = new UserDTO(user)
+    userDTO.profileImageUrl = user.profileImageKey ? getPublicImageUrl(user.profileImageKey) : null
+    return userDTO
   }
 
   async delete (userId: any): Promise<void> {
@@ -39,8 +56,14 @@ export class UserRepositoryImpl implements UserRepository {
           id: 'asc'
         }
       ]
+    }) as UserWithProfileImage[]
+    
+    // Map to UserDTO with profile image URLs
+    return users.map(user => {
+      const userDTO = new UserDTO(user)
+      userDTO.profileImageUrl = user.profileImageKey ? getPublicImageUrl(user.profileImageKey) : null
+      return userDTO
     })
-    return users.map(user => new UserDTO(user))
   }
 
   async getByEmailOrUsername (email?: string, username?: string): Promise<ExtendedUserDTO | null> {
@@ -55,7 +78,59 @@ export class UserRepositoryImpl implements UserRepository {
           }
         ]
       }
+    }) as UserWithProfileImage | null
+    
+    if (!user) return null
+    
+    // Create ExtendedUserDTO with the profile image URL
+    const extendedUserDTO = new ExtendedUserDTO(user)
+    extendedUserDTO.profileImageUrl = user.profileImageKey ? getPublicImageUrl(user.profileImageKey) : null
+    return extendedUserDTO
+  }
+  
+  async updateProfileImage(userId: string, profileImageKey: string): Promise<UserDTO> {
+    // Use any type to work around the type checking for now
+    const updateData: any = { profileImageKey };
+    
+    const user = await this.db.user.update({
+      where: {
+        id: userId
+      },
+      data: updateData
+    }) as UserWithProfileImage
+    
+    // Create UserDTO with the profile image URL
+    const userDTO = new UserDTO(user)
+    userDTO.profileImageUrl = getPublicImageUrl(profileImageKey)
+    return userDTO
+  }
+
+  async searchUsersByUsername(username: string, options: OffsetPagination): Promise<UserDTO[]> {
+    const users = await this.db.user.findMany({
+      where: {
+        username: {
+          contains: username,
+          mode: 'insensitive' // Case-insensitive search
+        },
+        deletedAt: null // Only include non-deleted users
+      },
+      take: options.limit ? options.limit : undefined,
+      skip: options.skip ? options.skip : undefined,
+      orderBy: [
+        {
+          username: 'asc' // Sort by username alphabetically
+        },
+        {
+          id: 'asc'
+        }
+      ]
+    }) as UserWithProfileImage[]
+    
+    // Map to UserDTO with profile image URLs
+    return users.map(user => {
+      const userDTO = new UserDTO(user)
+      userDTO.profileImageUrl = user.profileImageKey ? getPublicImageUrl(user.profileImageKey) : null
+      return userDTO
     })
-    return user ? new ExtendedUserDTO(user) : null
   }
 }

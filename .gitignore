@@ -1,2 +1,9 @@
 */.DS_Store
 .DS_Store
+./node/express-prisma-typescript/package-lock.json
+./node/express-prisma-typescript/
+.idea
+node_modules/.package-lock.json
+node_modules/.yarn-integrity
+node_modules/*
+./node_modules

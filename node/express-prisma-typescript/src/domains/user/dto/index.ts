@@ -1,37 +1,46 @@
 export class UserDTO {
-  constructor (user: UserDTO) {
+  constructor (user: any) {
     this.id = user.id
+    this.username = user.username
     this.name = user.name
     this.createdAt = user.createdAt
+    this.private = user.private ?? false
+    this.profileImageUrl = user.profileImageUrl ?? null
   }
 
   id: string
+  username: string
   name: string | null
   createdAt: Date
+  private: boolean
+  profileImageUrl: string | null
 }
 
 export class ExtendedUserDTO extends UserDTO {
-  constructor (user: ExtendedUserDTO) {
+  constructor (user: any) {
     super(user)
     this.email = user.email
-    this.name = user.name
     this.password = user.password
+    this.profileImageKey = user.profileImageKey
   }
 
   email!: string
-  username!: string
   password!: string
+  profileImageKey?: string | null
 }
+
 export class UserViewDTO {
-  constructor (user: UserViewDTO) {
+  constructor (user: any) {
     this.id = user.id
     this.name = user.name
     this.username = user.username
-    this.profilePicture = user.profilePicture
+    this.profileImageUrl = user.profileImageUrl
+    this.isFollowing = user.isFollowing
   }
 
   id: string
   name: string
   username: string
-  profilePicture: string | null
+  profileImageUrl: string | null
+  isFollowing?: boolean
 }
