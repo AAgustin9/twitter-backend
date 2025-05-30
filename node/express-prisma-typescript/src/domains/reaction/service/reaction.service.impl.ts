@@ -14,7 +14,9 @@ export class ReactionServiceImpl implements ReactionService {
     const existingReaction = await this.repository.findByUserAndPost(userId, postId, type)
     
     if (existingReaction) {
-      throw new Error(`User has already ${type.toLowerCase()}d this post`)
+      const action = type.toLowerCase();
+      const past = action.endsWith('e') ? `${action}d` : `${action}ed`;
+      throw new Error(`User has already ${past} this post`)
     }
 
     const reaction = await this.repository.create(postId, userId, type)
@@ -34,7 +36,9 @@ export class ReactionServiceImpl implements ReactionService {
     const existingReaction = await this.repository.findByUserAndPost(userId, postId, type)
     
     if (!existingReaction) {
-      throw new Error(`User has not ${type.toLowerCase()}d this post`)
+      const action = type.toLowerCase();
+      const past = action.endsWith('e') ? `${action}d` : `${action}ed`;
+      throw new Error(`User has not ${past} this post`)
     }
 
     await this.repository.delete(postId, userId, type)

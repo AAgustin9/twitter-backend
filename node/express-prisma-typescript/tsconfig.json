@@ -22,7 +22,8 @@
     "noFallthroughCasesInSwitch": true,
     "paths": {
       "@*": ["./*"]
-    }
+    },
+    "types": ["node", "jest", "socket.io", "socket.io-client"]
   },
   "lib": ["es2022"],
   "include": ["src/**/*"],
