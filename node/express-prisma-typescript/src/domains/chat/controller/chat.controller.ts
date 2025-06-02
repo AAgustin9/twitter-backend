@@ -15,6 +15,18 @@ export class ChatController {
         return res.status(400).json({ message: 'Missing required fields' })
       }
 
+      // Check if keys already exist
+      const storedEncryptedPrivateKey = await ChatService.getUserPrivateKey(userId)
+      const storedPublicKey = await ChatService.getUserPublicKey(userId)
+      if (storedEncryptedPrivateKey && storedPublicKey) {
+        try {
+          const privateKey = EncryptionService.decryptPrivateKey(storedEncryptedPrivateKey, password)
+          return res.status(200).json({ publicKey: storedPublicKey, privateKey })
+        } catch (err) {
+          return res.status(400).json({ message: 'Invalid password' })
+        }
+      }
+
       // Generate new key pair
       const { publicKey, privateKey } = EncryptionService.generateKeyPair()
 
@@ -24,7 +36,8 @@ export class ChatController {
       // Store keys in database
       await ChatService.storeUserKeys(userId, publicKey, encryptedPrivateKey)
 
-      return res.status(200).json({ message: 'Encryption keys generated successfully' })
+      // Return keypair to client for decryption
+      return res.status(200).json({ publicKey, privateKey })
     } catch (error) {
       console.error('Failed to generate keys:', error)
       return res.status(500).json({ message: 'Failed to generate encryption keys' })

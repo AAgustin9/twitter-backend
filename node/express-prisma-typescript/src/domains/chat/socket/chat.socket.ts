@@ -26,7 +26,7 @@ export class ChatSocket {
   constructor(server: HttpServer) {
     this.io = new Server(server, {
       cors: {
-        origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+        origin: '*', // allow all origins for testing
         methods: ['GET', 'POST']
       }
     })
@@ -86,18 +86,21 @@ export class ChatSocket {
             return;
           }
 
-          // Get receiver's public key
-          const receiverPublicKey = await ChatService.getUserPublicKey(receiverId);
-          if (!receiverPublicKey) {
-            authSocket.emit('error', { message: 'Receiver has no public key' });
-            return;
-          }
+          //  // Get receiver's public key
+          // const receiverPublicKey = await ChatService.getUserPublicKey(receiverId);
+          // if (!receiverPublicKey) {
+          //   authSocket.emit('error', { message: 'Receiver has no public key' });
+          //   return;
+          // }
 
-          // Encrypt message with receiver's public key
-          const encryptedContent = EncryptionService.encryptMessage(content, receiverPublicKey);
+          // // Encrypt message with receiver's public key
+          // const encryptedContent = EncryptionService.encryptMessage(content, receiverPublicKey);
 
-          // Store the encrypted message
-          const message = await ChatService.storeMessage(authSocket.userId, receiverId, encryptedContent);
+          // // Store the encrypted message
+          // const message = await ChatService.storeMessage(authSocket.userId, receiverId, encryptedContent); 
+
+          // For testing: store plain text message without encryption or public key check
+          const message = await ChatService.storeMessage(authSocket.userId, receiverId, content);
 
           // Send to both sender and receiver
           this.io.to(authSocket.userId).emit('new_message', message);
