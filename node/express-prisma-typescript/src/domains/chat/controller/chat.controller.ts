@@ -51,9 +51,8 @@ export class ChatController {
     try {
       const { userId } = res.locals.context
       const otherUserId = req.params.userId
-      const password = req.body.password
 
-      if (!userId || !otherUserId || !password) {
+      if (!userId || !otherUserId) {
         return res.status(400).json({ message: 'Missing required fields' })
       }
 
@@ -66,24 +65,8 @@ export class ChatController {
       // Get chat history
       const messages = await ChatService.getChatHistory(userId, otherUserId)
 
-      // Get user's encrypted private key
-      const encryptedPrivateKey = await ChatService.getUserPrivateKey(userId)
-      if (!encryptedPrivateKey) {
-        return res.status(400).json({ message: 'No private key found' })
-      }
-
-      // Decrypt private key
-      const privateKey = EncryptionService.decryptPrivateKey(encryptedPrivateKey, password)
-
-      // Decrypt messages where user is the receiver
-      const decryptedMessages = messages.map(message => ({
-        ...message,
-        content: message.receiverId === userId
-          ? EncryptionService.decryptMessage(message.content, privateKey)
-          : message.content
-      }))
-
-      return res.status(200).json(decryptedMessages)
+      // Return chat history
+      return res.status(200).json(messages)
     } catch (error) {
       console.error('Failed to get chat history:', error)
       return res.status(500).json({ message: 'Failed to get chat history' })

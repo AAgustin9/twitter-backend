@@ -7,6 +7,10 @@ export class TokenDTO {
 export class SignupInputDTO {
   @IsString()
   @IsNotEmpty()
+    name: string
+  
+  @IsString()
+  @IsNotEmpty()
   @IsEmail()
     email: string
 
@@ -19,7 +23,8 @@ export class SignupInputDTO {
   @IsStrongPassword()
     password: string
 
-  constructor (email: string, username: string, password: string) {
+  constructor (name: string, email: string, username: string, password: string) {
+    this.name = name
     this.email = email
     this.password = password
     this.username = username

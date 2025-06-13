@@ -37,7 +37,12 @@ describe('AuthServiceImpl', () => {
 
   describe('signup', () => {
     it('should sign up successfully', async () => {
-      const data: SignupInputDTO = { email: 'a@b.com', username: 'user', password: 'pass' };
+      const data: SignupInputDTO = {
+        name: 'Test user',
+        email: 'a@b.com', 
+        username: 'user', 
+        password: 'pass' 
+      };
       repository.getByEmailOrUsername.mockResolvedValue(null);
       repository.create.mockResolvedValue({ id: '1', email: data.email, username: data.username } as any);
       const result = await service.signup(data);
@@ -48,7 +53,12 @@ describe('AuthServiceImpl', () => {
     });
 
     it('should throw ConflictException if user exists', async () => {
-      const data: SignupInputDTO = { email: 'a@b.com', username: 'user', password: 'pass' };
+      const data: SignupInputDTO = {
+        name: 'Test user',
+        email: 'a@b.com', 
+        username: 'user', 
+        password: 'pass' 
+      };
       repository.getByEmailOrUsername.mockResolvedValue({} as any);
       await expect(service.signup(data)).rejects.toThrow(ConflictException);
     });
