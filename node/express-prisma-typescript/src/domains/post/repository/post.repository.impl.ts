@@ -116,30 +116,37 @@ export class PostRepositoryImpl implements PostRepository {
     })
   }
 
-  async getById (postId: string, userId?: string): Promise<PostDTO | null> {
+  async getById (postId: string, userId?: string): Promise<ExtendedPostDTO | null> {
     const post = await this.db.post.findUnique({
-      where: {
-        id: postId
-      },
+      where: { id: postId },
       include: {
-        author: {
-          select: {
-            private: true
-          }
-        }
+        author: true,
+        reactions: true,
+        comments: { include: { author: true } },
+        parent: { include: { author: true } }
       }
     })
     if (!post) return null
-    
-    const postDTO = new PostDTO(post)
-    
-    // If userId is provided, check if they can view the post
+
+    // privacy check (unchanged)
     if (userId && post.author.private) {
-      const canView = await this.canViewPost(postDTO, userId)
+      const canView = await this.canViewPost(new PostDTO(post), userId)
       if (!canView) return null
     }
-    
-    return postDTO
+
+    // build the ExtendedPostDTO
+    const qtyLikes = post.reactions.filter(r => r.type === 'LIKE').length
+    const qtyRetweets = post.reactions.filter(r => r.type === 'RETWEET').length
+
+    return new ExtendedPostDTO({
+      ...post,
+      qtyComments: post.comments.length,
+      qtyLikes,
+      qtyRetweets,
+      comments: post.comments,
+      parent: post.parent,
+      author: post.author
+    })
   }
 
   async getByAuthorId (authorId: string, userId?: string): Promise<ExtendedPostDTO[]> {

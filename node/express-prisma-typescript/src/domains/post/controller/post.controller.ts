@@ -245,8 +245,10 @@ postRouter.post('/', BodyValidation(CreatePostInputDTO), async (req: Request, re
 
   const post = await service.createPost(userId, data)
 
-  return res.status(HttpStatus.CREATED).json(post)
-})
+  const full = await service.getPost(userId, post.id);
+
+  return res.status(HttpStatus.CREATED).json(full);
+});
 
 /**
  * @swagger

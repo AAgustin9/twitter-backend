@@ -36,7 +36,7 @@ export class PostDTO {
 }
 
 export class ExtendedPostDTO extends PostDTO {
-  constructor (post: ExtendedPostDTO) {
+  constructor (post: any) {
     super(post)
     this.author = post.author
     this.qtyComments = post.qtyComments
