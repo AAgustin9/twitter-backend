@@ -83,6 +83,76 @@ postRouter.get('/', async (req: Request, res: Response) => {
 
 /**
  * @swagger
+ * /api/post/following:
+ *   get:
+ *     summary: Get posts from users you follow
+ *     description: Returns a list of top-level posts authored by users the current user is following
+ *     tags: [Post]
+ *     parameters:
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *         description: Maximum number of posts to return
+ *       - in: query
+ *         name: before
+ *         schema:
+ *           type: string
+ *         description: Get posts before this cursor (pagination)
+ *       - in: query
+ *         name: after
+ *         schema:
+ *           type: string
+ *         description: Get posts after this cursor (pagination)
+ *     responses:
+ *       200:
+ *         description: List of posts from followed users
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   id:
+ *                     type: string
+ *                   content:
+ *                     type: string
+ *                   authorId:
+ *                     type: string
+ *                   images:
+ *                     type: array
+ *                     items:
+ *                       type: string
+ *                   createdAt:
+ *                     type: string
+ *                     format: date-time
+ *                   author:
+ *                     type: object
+ *                   qtyComments:
+ *                     type: integer
+ *                   qtyLikes:
+ *                     type: integer
+ *                   qtyRetweets:
+ *                     type: integer
+ *       401:
+ *         description: Unauthorized
+ */
+postRouter.get('/following', async (req: Request, res: Response) => {
+  const { userId } = res.locals.context
+  const { limit, before, after } = req.query as Record<string, string>
+
+  const posts = await service.getFollowingPosts(userId, {
+    limit: limit ? Number(limit) : undefined,
+    before,
+    after
+  })
+
+  return res.status(HttpStatus.OK).json(posts)
+})
+
+/**
+ * @swagger
  * /api/post/{postId}:
  *   get:
  *     summary: Get post by ID

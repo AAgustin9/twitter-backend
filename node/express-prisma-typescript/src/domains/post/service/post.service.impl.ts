@@ -32,23 +32,29 @@ export class PostServiceImpl implements PostService {
   }
 
   async getPostsByAuthor (userId: string, authorId: string): Promise<ExtendedPostDTO[]> {
-    // First check if the author exists and if they have a private account
     const authorInfo = await this.repository.getAuthorPrivacyInfo(authorId)
     if (!authorInfo) {
       throw new NotFoundException('user')
     }
     
-    // If the author has a private account, check if the user follows them
     if (authorInfo.private) {
       const canAccess = await this.repository.canAccessAuthorPosts(userId, authorId)
       if (!canAccess) {
-        throw new NotFoundException('user') // 404 to not reveal the existence of private accounts
+        throw new NotFoundException('user')
       }
     }
     
     return await this.repository.getByAuthorId(authorId, userId)
   }
   
+  async getFollowingPosts(
+    userId: string,
+    options: CursorPagination
+  ): Promise<ExtendedPostDTO[]> {
+    return await this.repository.getPostsFromFollowing(options, userId)
+  }
+
+
   // Comment methods
   async createComment(userId: string, data: CreateCommentInputDTO): Promise<PostDTO> {
     await validate(data)
@@ -79,7 +85,7 @@ export class PostServiceImpl implements PostService {
     if (authorInfo.private && viewerId !== authorId) {
       const canAccess = await this.repository.canAccessAuthorPosts(viewerId, authorId)
       if (!canAccess) {
-        throw new NotFoundException('user') // 404 to not reveal the existence of private accounts
+        throw new NotFoundException('user')
       }
     }
     

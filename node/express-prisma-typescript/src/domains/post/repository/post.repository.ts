@@ -10,6 +10,7 @@ export interface PostRepository {
   canViewPost: (post: PostDTO, userId: string) => Promise<boolean>
   getAuthorPrivacyInfo: (authorId: string) => Promise<{ private: boolean } | null>
   canAccessAuthorPosts: (userId: string, authorId: string) => Promise<boolean>
+  getPostsFromFollowing: (options: CursorPagination, userId: string) => Promise<ExtendedPostDTO[]>
   
   // Comment methods
   createComment: (userId: string, parentId: string, data: CreatePostInputDTO) => Promise<PostDTO>

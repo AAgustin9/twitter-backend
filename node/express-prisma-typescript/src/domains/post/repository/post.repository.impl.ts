@@ -267,6 +267,58 @@ export class PostRepositoryImpl implements PostRepository {
     
     return isFollowing !== null
   }
+
+  async getPostsFromFollowing( options: CursorPagination, userId: string): Promise<ExtendedPostDTO[]> {
+    const posts = await this.db.post.findMany({
+      where: {
+        parentId: null,
+        author: {
+          followers: {
+            some: { followerId: userId }
+          }
+        }
+      },
+      include: {
+        author: true,
+        comments: { include: { author: true } },
+        parent: { include: { author: true } },
+        reactions: true
+      },
+      cursor: options.after
+        ? { id: options.after }
+        : options.before
+        ? { id: options.before }
+        : undefined,
+      skip: options.after || options.before ? 1 : undefined,
+      take: options.limit
+        ? options.before
+          ? -options.limit
+          : options.limit
+        : undefined,
+      orderBy: [
+        { createdAt: 'desc' },
+        { id: 'asc' }
+      ]
+    })
+
+    return posts.map((post: any) => {
+      const qtyLikes = post.reactions.filter((r: any) => r.type === 'LIKE').length
+      const qtyRetweets = post.reactions.filter((r: any) => r.type === 'RETWEET').length
+      return new ExtendedPostDTO({
+        ...post,
+        qtyComments: post.comments.length,
+        qtyLikes,
+        qtyRetweets,
+        comments: post.comments,
+        parent: post.parent,
+        author: post.author
+      })
+    })
+  }
+
+
+
+
   
   // Comment methods
   async createComment(userId: string, parentId: string, data: CreatePostInputDTO): Promise<PostDTO> {
