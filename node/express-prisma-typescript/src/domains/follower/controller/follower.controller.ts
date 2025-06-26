@@ -93,3 +93,13 @@ followerRouter.post('/unfollow/:user_id', async (req: Request, res: Response) =>
   return res.status(HttpStatus.OK).json({ message: 'Successfully unfollowed user' })
 })
 
+/**
+      * GET /api/follower/following
+      * Returns the list of users the current user is following
+      */
+followerRouter.get('/following',async (req, res) => {
+    const { userId } = res.locals.context
+    const list = await service.getFollowing(userId)
+    return res.json(list)
+  }
+)
