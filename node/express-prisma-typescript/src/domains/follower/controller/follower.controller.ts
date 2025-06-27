@@ -94,9 +94,12 @@ followerRouter.post('/unfollow/:user_id', async (req: Request, res: Response) =>
 })
 
 /**
-      * GET /api/follower/following
-      * Returns the list of users the current user is following
-      */
+ * @swagger
+ * /api/follower/following
+ *  post:
+ *    summary: Returns a list of following users
+ *    description: Get all the users followers
+ */
 followerRouter.get('/following',async (req, res) => {
     const { userId } = res.locals.context
     const list = await service.getFollowing(userId)
