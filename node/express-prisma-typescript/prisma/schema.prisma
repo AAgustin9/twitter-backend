@@ -54,6 +54,8 @@ model Follow {
 
   follower User @relation(name: "follows", fields: [followerId], references: [id], onDelete: Cascade) // One to many
   followed User @relation(name: "followers", fields: [followedId], references: [id], onDelete: Cascade) // One to many
+
+  @@unique([followerId, followedId])
 }
 
 model Post {

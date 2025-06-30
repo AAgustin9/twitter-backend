@@ -29,10 +29,14 @@ const service: AuthService = new AuthServiceImpl(new UserRepositoryImpl(db))
  *           schema:
  *             type: object
  *             required:
+ *               - name
  *               - email
  *               - username
  *               - password
  *             properties:
+ *               name:
+ *                  type: string
+ *                  description: User's display name
  *               email:
  *                 type: string
  *                 format: email

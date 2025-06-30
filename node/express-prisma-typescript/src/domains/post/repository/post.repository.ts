@@ -5,11 +5,12 @@ export interface PostRepository {
   create: (userId: string, data: CreatePostInputDTO) => Promise<PostDTO>
   getAllByDatePaginated: (options: CursorPagination, userId: string) => Promise<PostDTO[]>
   delete: (postId: string) => Promise<void>
-  getById: (postId: string, userId?: string) => Promise<PostDTO | null>
+  getById: (postId: string, userId?: string) => Promise<ExtendedPostDTO | null>
   getByAuthorId: (authorId: string, userId?: string) => Promise<ExtendedPostDTO[]>
   canViewPost: (post: PostDTO, userId: string) => Promise<boolean>
   getAuthorPrivacyInfo: (authorId: string) => Promise<{ private: boolean } | null>
   canAccessAuthorPosts: (userId: string, authorId: string) => Promise<boolean>
+  getPostsFromFollowing: (options: CursorPagination, userId: string) => Promise<ExtendedPostDTO[]>
   
   // Comment methods
   createComment: (userId: string, parentId: string, data: CreatePostInputDTO) => Promise<PostDTO>

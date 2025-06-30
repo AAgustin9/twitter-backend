@@ -17,7 +17,6 @@
     <h1>Chat Test</h1>
     <div>
       <label>Token: <input id="token" type="text" style="width:300px;" placeholder="Enter JWT token" /></label>
-      <label style="margin-left:10px;">Password: <input id="password" type="password" placeholder="Your password" /></label>
       <button id="connect">Connect</button>
       <button id="disconnect" disabled>Disconnect</button>
     </div>
@@ -34,7 +33,6 @@
     <script>
       let socket;
       let privateKey, publicKey;
-      const passwordInput = document.getElementById('password');
       const connectBtn = document.getElementById('connect');
       const disconnectBtn = document.getElementById('disconnect');
       const startChatBtn = document.getElementById('startChat');
@@ -69,8 +67,6 @@
       connectBtn.addEventListener('click', () => {
         const token = tokenInput.value.trim();
         if (!token) { alert('Please enter a token'); return; }
-        const password = passwordInput.value.trim();
-        if (!password) { alert('Please enter your password'); return; }
         socket = io('http://localhost:8080', { auth: { token } });
 
         socket.on('connect', () => {
@@ -82,29 +78,26 @@
               'Content-Type': 'application/json',
               'Authorization': 'Bearer ' + token
             },
-            body: JSON.stringify({ password })
+            body: JSON.stringify({})
           })
           .then(res => res.json())
           .then(data => {
             publicKey = data.publicKey;
-            privateKey = data.privateKey;
             connectBtn.disabled = true;
             disconnectBtn.disabled = false;
             startChatBtn.disabled = false;
             tokenInput.disabled = true;
-            passwordInput.disabled = true;
+            receiverInput.disabled = false;
           }).catch(err => {
             alert('Failed to load keys: ' + (err.message || err));
           });
         });
 
         socket.on('chat_history', history => {
-          const dec = history.map(msg => ({ senderId: msg.senderId, content: decrypt(msg.content) }));
-          loadHistory(dec);
+          loadHistory(history);
         });
         socket.on('new_message', msg => {
-          const decMsg = { senderId: msg.senderId, content: decrypt(msg.content) };
-          addMessage(decMsg);
+          addMessage(msg);
         });
         socket.on('error', err => alert(err.message));
         socket.on('disconnect', () => {
